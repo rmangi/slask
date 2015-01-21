@@ -1,10 +1,6 @@
 import slask
 from nose.tools import eq_
 
-#TODO:
-# * configurable logging.
-# * test log messages.
-
 def test_plugin_success():
     hooks = slask.init_plugins("test/plugins")
     eq_( len(hooks) ,  1)
@@ -21,3 +17,11 @@ def test_plugin_invalid_dir():
 def test_run_hook():
     hooks = slask.init_plugins("test/plugins")
     eq_(slask.run_hook(hooks, "message", {"text": u"bananas"}, None), [u"bananas"])
+
+def test_missing_hook():
+    hooks = slask.init_plugins("test/plugins")
+    eq_(slask.run_hook(hooks, "nonexistant", {"text": u"bananas"}, None), [])
+
+def test_logging():
+    #gotta figure out configurable... config
+    pass
