@@ -12,7 +12,7 @@ def test_plugin_success():
     assert isinstance(hooks, dict)
     assert isinstance(hooks["message"], list)
     eq_( len(hooks["message"]) ,  1)
-    eq_( hooks["message"][0]({"text": "bananas"}, None) ,  "bananas")
+    eq_( hooks["message"][0]({"text": u"bananas"}, None) ,  u"bananas")
 
 def test_plugin_invalid_dir():
     hooks = slask.init_plugins("invalid/package")
@@ -20,4 +20,6 @@ def test_plugin_invalid_dir():
 
 def test_run_hook():
     hooks = slask.init_plugins("test/plugins")
-    eq_(slask.run_hook(hooks, "message", {"text": "bananas"}, None), ["bananas"])
+    eq_(slask.run_hook(hooks, "message", {"text": u"bananas"}, None), [u"bananas"])
+
+def k
