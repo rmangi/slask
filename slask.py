@@ -9,20 +9,27 @@ from slackclient import SlackClient
 import sys
 import time
 import traceback
+import logging
 
 from config import config
+
+def init_log():
+    loglevel = config.get("loglevel", logging.INFO)
+    logformat = config.get("logformat", '%(asctime)s:%(levelname)s:%(message)s')
+    logfile = config.get("logfile", "slask.log")
+    logging.basicConfig(filename=logfile, level=loglevel, format=logformat)
 
 def init_plugins(plugindir):
     hooks = {}
 
     for plugin in glob(os.path.join(plugindir, "[!_]*.py")):
-        print("plugin: {0}".format(plugin))
+        logging.debug("plugin: {0}".format(plugin))
         try:
             mod = importlib.import_module(plugin.replace(os.path.sep, ".")[:-3])
             modname = mod.__name__.split('.')[1]
             for hook in re.findall("on_(\w+)", " ".join(dir(mod))):
                 hookfun = getattr(mod, "on_" + hook)
-                print("attaching {0}.{1} to {2}".format(modname, hookfun, hook))
+                logging.debug("attaching {0}.{1} to {2}".format(modname, hookfun, hook))
                 hooks.setdefault(hook, []).append(hookfun)
 
             if mod.__doc__:
@@ -33,9 +40,9 @@ def init_plugins(plugindir):
         #bare except, because the modules could raise any number of errors
         #on import, and we want them not to kill our server
         except:
-            print("import failed on module {0}, module not loaded".format(plugin))
-            print("{0}".format(sys.exc_info()[0]))
-            print("{0}".format(traceback.format_exc()))
+            logging.debug("import failed on module {0}, module not loaded".format(plugin))
+            logging.debug("{0}".format(sys.exc_info()[0]))
+            logging.debug("{0}".format(traceback.format_exc()))
 
     return hooks
 
@@ -56,7 +63,7 @@ def handle_message(client, event, hooks):
     try:
         msguser = client.server.users.get(event["user"])
     except KeyError:
-        print("event {0} has no user".format(event))
+        logging.debug("event {0} has no user".format(event))
         return
 
     if msguser["name"] == botname or msguser["name"].lower() == "slackbot":
@@ -72,7 +79,8 @@ event_handlers = {
 }
 
 if __name__=="__main__":
-    curdir = os.path.dirname(os.path.abspath(__file__))
+    init_log()
+
     hooks = init_plugins("plugins")
 
     sc = SlackClient(config["token"])
@@ -87,4 +95,4 @@ if __name__=="__main__":
                     handler(sc, event)
             time.sleep(1)
     else:
-        print("Connection Failed, invalid token <{0}>?".format(config["token"]))
+        logging.debug("Connection Failed, invalid token <{0}>?".format(config["token"]))
