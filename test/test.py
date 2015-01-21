@@ -1,4 +1,5 @@
 import slask
+from nose.tools import eq_
 
 #TODO:
 # * configurable logging.
@@ -6,13 +7,17 @@ import slask
 
 def test_plugin_success():
     hooks = slask.init_plugins("test/plugins")
-    assert len(hooks) == 1
+    eq_( len(hooks) ,  1)
     assert "message" in hooks
     assert isinstance(hooks, dict)
     assert isinstance(hooks["message"], list)
-    assert len(hooks["message"]) == 1
-    assert hooks["message"][0]({"text": "bananas"}, None) == "bananas"
+    eq_( len(hooks["message"]) ,  1)
+    eq_( hooks["message"][0]({"text": "bananas"}, None) ,  "bananas")
 
 def test_plugin_invalid_dir():
     hooks = slask.init_plugins("invalid/package")
-    assert len(hooks) == 0
+    eq_( len(hooks) ,  0)
+
+def test_run_hook():
+    hooks = slask.init_plugins("test/plugins")
+    eq_(slask.run_hook(hooks, "message", {"text": "bananas"}, None), ["bananas"])
