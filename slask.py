@@ -10,14 +10,12 @@ import sys
 import time
 import traceback
 
-curdir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(curdir)
-
 from config import config
 
-hooks = {}
-def init_plugins():
-    for plugin in glob('plugins/[!_]*.py'):
+def init_plugins(plugindir):
+    hooks = {}
+
+    for plugin in glob(os.path.join(plugindir, "[!_]*.py")):
         print("plugin: {0}".format(plugin))
         try:
             mod = importlib.import_module(plugin.replace(os.path.sep, ".")[:-3])
@@ -39,9 +37,9 @@ def init_plugins():
             print("{0}".format(sys.exc_info()[0]))
             print("{0}".format(traceback.format_exc()))
 
-init_plugins()
+    return hooks
 
-def run_hook(hook, data, server):
+def run_hook(hooks, hook, data, server):
     responses = []
     for hook in hooks.get(hook, []):
         h = hook(data, server)
@@ -49,7 +47,7 @@ def run_hook(hook, data, server):
 
     return responses
 
-def handle_message(client, event):
+def handle_message(client, event, hooks):
     # ignore bot messages and edits
     subtype = event.get("subtype", "")
     if subtype == "bot_message" or subtype == "message_changed": return
@@ -64,7 +62,7 @@ def handle_message(client, event):
     if msguser["name"] == botname or msguser["name"].lower() == "slackbot":
         return
 
-    text = "\n".join(run_hook("message", event, {"client": client, "config": config, "hooks": hooks}))
+    text = "\n".join(run_hook(hooks, "message", event, {"client": client, "config": config, "hooks": hooks}))
 
     if text:
         client.rtm_send_message(event["channel"], text)
@@ -74,6 +72,9 @@ event_handlers = {
 }
 
 if __name__=="__main__":
+    curdir = os.path.dirname(os.path.abspath(__file__))
+    hooks = init_plugins("plugins")
+
     sc = SlackClient(config["token"])
     if sc.rtm_connect():
         users = sc.server.users
